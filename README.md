@@ -9,6 +9,7 @@ This folder contains modular scripts for setting up an Ubuntu desktop VM with:
 - Ansible
 - kubectl
 - Graphviz (`dot`)
+- Azure CLI (`az`)
 
 The scripts are written for Ubuntu with `apt` and use official upstream package repositories where appropriate.
 
@@ -30,7 +31,7 @@ bash setup-dd/setup.sh
 The master script runs each installer in this order:
 
 ```text
-vscode, chrome, docker, terraform, ansible, kubectl, graphviz
+vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli
 ```
 
 Each installer checks whether the tool is already installed before making changes.
@@ -46,7 +47,7 @@ bash setup-dd/setup.sh --only docker,terraform,kubectl
 Available tool names:
 
 ```text
-vscode, chrome, docker, terraform, ansible, kubectl, graphviz
+vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli
 ```
 
 ## Skip Tools
@@ -67,6 +68,7 @@ SKIP_TERRAFORM
 SKIP_ANSIBLE
 SKIP_KUBECTL
 SKIP_GRAPHVIZ
+SKIP_AZURE_CLI
 ```
 
 ## Run Individual Installers
@@ -81,6 +83,7 @@ bash setup-dd/install-terraform.sh
 bash setup-dd/install-ansible.sh
 bash setup-dd/install-kubectl.sh
 bash setup-dd/install-graphviz.sh
+bash setup-dd/install-azure-cli.sh
 ```
 
 ## Docker Without sudo
@@ -126,6 +129,7 @@ terraform version
 ansible --version
 kubectl version --client
 dot -V
+az version
 ```
 
 ## Files
@@ -139,6 +143,7 @@ dot -V
 - `install-ansible.sh`: Ansible installer
 - `install-kubectl.sh`: kubectl installer
 - `install-graphviz.sh`: Graphviz / `dot` installer
+- `install-azure-cli.sh`: Azure CLI installer
 
 ## Safety Notes
 

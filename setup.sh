@@ -6,7 +6,7 @@ SETUP_DD_NAME="setup"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/lib/common.sh"
 
-TOOLS=(vscode chrome docker terraform ansible kubectl graphviz)
+TOOLS=(vscode chrome docker terraform ansible kubectl graphviz azure-cli)
 ONLY_TOOLS=""
 
 usage() {
@@ -15,7 +15,7 @@ Usage:
   bash setup-dd/setup.sh [--only tool1,tool2]
 
 Tools:
-  vscode, chrome, docker, terraform, ansible, kubectl, graphviz
+  vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli
 
 Examples:
   bash setup-dd/setup.sh
@@ -30,6 +30,7 @@ Environment:
   SKIP_ANSIBLE=true     Skip Ansible
   SKIP_KUBECTL=true     Skip kubectl
   SKIP_GRAPHVIZ=true    Skip Graphviz
+  SKIP_AZURE_CLI=true   Skip Azure CLI
   KUBECTL_MINOR_VERSION Override kubectl repo version, e.g. v1.36
   SETUP_DD_USER         User to add to docker group, defaults to current user
 EOF
@@ -77,7 +78,7 @@ should_run_tool() {
     esac
   fi
 
-  upper="$(printf '%s' "$tool" | tr '[:lower:]' '[:upper:]')"
+  upper="$(printf '%s' "$tool" | tr '[:lower:]-' '[:upper:]_')"
   skip_var="SKIP_${upper}"
   skip_value="${!skip_var:-false}"
 
@@ -108,6 +109,7 @@ EOF
   printf '  Ansible:   %s\n' "$(print_command_version ansible --version)"
   printf '  kubectl:   %s\n' "$(print_command_version kubectl version --client)"
   printf '  Graphviz:  %s\n' "$(print_command_version dot -V)"
+  printf '  Azure CLI: %s\n' "$(print_command_version az --version)"
 
   cat <<'EOF'
 
