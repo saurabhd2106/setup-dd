@@ -144,6 +144,11 @@ az version
 - `install-kubectl.sh`: kubectl installer
 - `install-graphviz.sh`: Graphviz / `dot` installer
 - `install-azure-cli.sh`: Azure CLI installer
+- `install-databricks-cli.sh`: Databricks CLI installer
+
+## Azure CLI on newer Ubuntu releases
+
+Microsoft’s Azure CLI apt repo does not always publish a suite for the newest Ubuntu codenames (for example `resolute` on 26.04). In that case the installer falls back to a supported suite such as `noble`, and apt update automatically repairs a previously broken `azure-cli.list` so other installers (including Databricks) are not blocked.
 
 ## Safety Notes
 

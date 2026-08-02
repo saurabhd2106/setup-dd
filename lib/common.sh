@@ -69,12 +69,99 @@ ensure_apt() {
   fi
 }
 
+apt_suite_exists() {
+  local repo_url="$1"
+  local suite="$2"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    return 1
+  fi
+
+  curl -fsI --connect-timeout 5 --max-time 15 "${repo_url%/}/dists/${suite}/Release" >/dev/null 2>&1
+}
+
+resolve_apt_suite() {
+  local repo_url="$1"
+  shift
+  local suite
+
+  for suite in "$@"; do
+    [[ -n "$suite" ]] || continue
+    if apt_suite_exists "$repo_url" "$suite"; then
+      printf '%s\n' "$suite"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+azure_cli_apt_suite() {
+  local preferred fallback
+  preferred="$(ubuntu_codename)"
+
+  if fallback="$(resolve_apt_suite "https://packages.microsoft.com/repos/azure-cli" "$preferred" noble jammy focal)"; then
+    printf '%s\n' "$fallback"
+    return 0
+  fi
+
+  case "$preferred" in
+    noble|jammy|focal)
+      printf '%s\n' "$preferred"
+      return 0
+      ;;
+    resolute|questing|plucky)
+      # Microsoft has not published suites for these Ubuntu releases yet.
+      printf 'noble\n'
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+repair_azure_cli_apt_source() {
+  local source_path="/etc/apt/sources.list.d/azure-cli.list"
+  local keyring_path="/etc/apt/keyrings/microsoft.gpg"
+  local preferred suite source_line
+
+  [[ -e "$source_path" ]] || return 0
+
+  preferred="$(ubuntu_codename)"
+  if ! suite="$(azure_cli_apt_suite)"; then
+    warn "Azure CLI apt suite is unavailable; disabling $source_path so apt update can continue."
+    run_sudo mv -f "$source_path" "${source_path}.disabled"
+    APT_UPDATED=false
+    return 0
+  fi
+
+  if [[ "$suite" != "$preferred" ]]; then
+    warn "Ubuntu '$preferred' has no Azure CLI apt suite yet; using '$suite' instead."
+  fi
+
+  if [[ ! -s "$keyring_path" ]]; then
+    warn "Azure CLI apt keyring missing at $keyring_path; disabling $source_path so apt update can continue."
+    run_sudo mv -f "$source_path" "${source_path}.disabled"
+    APT_UPDATED=false
+    return 0
+  fi
+
+  source_line="deb [arch=$(dpkg_arch) signed-by=${keyring_path}] https://packages.microsoft.com/repos/azure-cli/ ${suite} main"
+  if [[ -r "$source_path" ]] && grep -Fxq "$source_line" "$source_path"; then
+    return 0
+  fi
+
+  write_apt_source "$source_line" "$source_path"
+}
+
 apt_update_once() {
   ensure_apt
 
   if [[ "$APT_UPDATED" == "true" ]]; then
     return 0
   fi
+
+  repair_azure_cli_apt_source
 
   log "Updating apt package indexes."
   run_sudo apt-get update
@@ -91,6 +178,30 @@ apt_install() {
   apt_update_once
   log "Installing packages: $*"
   run_sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
+}
+
+# Install apt packages only when the matching command is missing.
+# Usage: apt_install_missing curl:curl unzip:unzip
+apt_install_missing() {
+  local spec package command_name
+  local -a missing=()
+
+  for spec in "$@"; do
+    package="${spec%%:*}"
+    command_name="${spec#*:}"
+    if [[ "$command_name" == "$spec" ]]; then
+      command_name="$package"
+    fi
+    if ! command -v "$command_name" >/dev/null 2>&1; then
+      missing+=("$package")
+    fi
+  done
+
+  if [[ "${#missing[@]}" -eq 0 ]]; then
+    return 0
+  fi
+
+  apt_install "${missing[@]}"
 }
 
 ensure_apt_prereqs() {
