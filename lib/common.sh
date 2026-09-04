@@ -120,18 +120,45 @@ azure_cli_apt_suite() {
   return 1
 }
 
-repair_azure_cli_apt_source() {
-  local source_path="/etc/apt/sources.list.d/azure-cli.list"
-  local keyring_path="/etc/apt/keyrings/microsoft.gpg"
-  local preferred suite source_line
+disable_apt_source_file() {
+  local source_path="$1"
 
   [[ -e "$source_path" ]] || return 0
+  warn "Disabling $source_path so apt update can continue."
+  run_sudo mv -f "$source_path" "${source_path}.disabled"
+  APT_UPDATED=false
+}
+
+write_azure_cli_apt_sources() {
+  local suite="$1"
+  local keyring_path="$2"
+  local list_path="/etc/apt/sources.list.d/azure-cli.list"
+  local deb822_path="/etc/apt/sources.list.d/azure-cli.sources"
+  local source_line
+
+  source_line="deb [arch=$(dpkg_arch) signed-by=${keyring_path}] https://packages.microsoft.com/repos/azure-cli/ ${suite} main"
+  write_apt_source "$source_line" "$list_path"
+
+  # Prefer a single classic .list entry. Disable any DEB822 azure-cli.sources
+  # (Microsoft's newer installer format) so apt does not keep a broken suite.
+  if [[ -e "$deb822_path" ]]; then
+    disable_apt_source_file "$deb822_path"
+  fi
+}
+
+repair_azure_cli_apt_source() {
+  local list_path="/etc/apt/sources.list.d/azure-cli.list"
+  local deb822_path="/etc/apt/sources.list.d/azure-cli.sources"
+  local keyring_path="/etc/apt/keyrings/microsoft.gpg"
+  local preferred suite source_line
+  local needs_repair=false
+
+  [[ -e "$list_path" || -e "$deb822_path" ]] || return 0
 
   preferred="$(ubuntu_codename)"
   if ! suite="$(azure_cli_apt_suite)"; then
-    warn "Azure CLI apt suite is unavailable; disabling $source_path so apt update can continue."
-    run_sudo mv -f "$source_path" "${source_path}.disabled"
-    APT_UPDATED=false
+    disable_apt_source_file "$list_path"
+    disable_apt_source_file "$deb822_path"
     return 0
   fi
 
@@ -140,18 +167,29 @@ repair_azure_cli_apt_source() {
   fi
 
   if [[ ! -s "$keyring_path" ]]; then
-    warn "Azure CLI apt keyring missing at $keyring_path; disabling $source_path so apt update can continue."
-    run_sudo mv -f "$source_path" "${source_path}.disabled"
-    APT_UPDATED=false
+    warn "Azure CLI apt keyring missing at $keyring_path."
+    disable_apt_source_file "$list_path"
+    disable_apt_source_file "$deb822_path"
     return 0
   fi
 
   source_line="deb [arch=$(dpkg_arch) signed-by=${keyring_path}] https://packages.microsoft.com/repos/azure-cli/ ${suite} main"
-  if [[ -r "$source_path" ]] && grep -Fxq "$source_line" "$source_path"; then
+
+  if [[ -e "$deb822_path" ]]; then
+    needs_repair=true
+  fi
+  if [[ -e "$list_path" ]] && ! grep -Fxq "$source_line" "$list_path" 2>/dev/null; then
+    needs_repair=true
+  fi
+  if [[ ! -e "$list_path" ]]; then
+    needs_repair=true
+  fi
+
+  if [[ "$needs_repair" != "true" ]]; then
     return 0
   fi
 
-  write_apt_source "$source_line" "$source_path"
+  write_azure_cli_apt_sources "$suite" "$keyring_path"
 }
 
 apt_update_once() {
@@ -273,6 +311,70 @@ write_apt_source() {
 
 target_user() {
   printf '%s\n' "${SETUP_DD_USER:-${SUDO_USER:-${USER}}}"
+}
+
+target_home() {
+  local user
+  user="$(target_user)"
+  getent passwd "$user" | cut -d: -f6
+}
+
+# Run a command as the target (non-root) user. If already that user, run directly.
+run_as_target_user() {
+  local user
+  user="$(target_user)"
+
+  if [[ "$(id -un)" == "$user" ]]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    # Always use sudo -u here (even when EUID is 0) so SUDO=() does not drop -u.
+    sudo -u "$user" -- "$@"
+  elif [[ "${EUID:-$(id -u)}" -eq 0 ]] && command -v runuser >/dev/null 2>&1; then
+    runuser -u "$user" -- "$@"
+  else
+    fail "cannot run command as user '$user'"
+  fi
+}
+
+# Ensure a directory is on PATH in the target user's shell profile.
+# Usage: ensure_profile_path /path/to/bin "setup-dd install-rust"
+ensure_profile_path() {
+  local dir="$1"
+  local tag="${2:-setup-dd}"
+  local home_dir
+  local line
+  local profile
+  local marker
+
+  home_dir="$(target_home)"
+  [[ -n "$home_dir" ]] || fail "could not resolve home directory for $(target_user)"
+
+  case ":${PATH}:" in
+    *:"${dir}":*) ;;
+    *) export PATH="${dir}:${PATH}" ;;
+  esac
+
+  marker="# Added by ${tag}"
+  line="export PATH=\"${dir}:\$PATH\""
+
+  for profile in "${home_dir}/.bashrc" "${home_dir}/.profile"; do
+    if [[ -f "$profile" ]] && grep -Fq "$dir" "$profile" 2>/dev/null; then
+      return 0
+    fi
+  done
+
+  if [[ -f "${home_dir}/.bashrc" ]]; then
+    profile="${home_dir}/.bashrc"
+  else
+    profile="${home_dir}/.profile"
+    run_as_target_user touch "$profile"
+  fi
+
+  log "Adding ${dir} to PATH in $profile"
+  {
+    printf '\n%s\n' "$marker"
+    printf '%s\n' "$line"
+  } | run_as_target_user tee -a "$profile" >/dev/null
 }
 
 print_command_version() {

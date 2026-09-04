@@ -18,9 +18,7 @@ install_gpg_key \
   "https://packages.microsoft.com/keys/microsoft.asc" \
   "/etc/apt/keyrings/microsoft.gpg"
 
-write_apt_source \
-  "deb [arch=$(dpkg_arch) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ ${AZURE_CLI_SUITE} main" \
-  "/etc/apt/sources.list.d/azure-cli.list"
+write_azure_cli_apt_sources "$AZURE_CLI_SUITE" "/etc/apt/keyrings/microsoft.gpg"
 
 if command -v az >/dev/null 2>&1; then
   log "Azure CLI is already installed: $(az version --query '"azure-cli"' -o tsv 2>/dev/null || az --version | sed -n '1p')"

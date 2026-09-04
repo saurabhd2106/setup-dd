@@ -10,6 +10,19 @@ This folder contains modular scripts for setting up an Ubuntu desktop VM with:
 - kubectl
 - Graphviz (`dot`)
 - Azure CLI (`az`)
+- AWS CLI (`aws`)
+- Python 3 (`python3`, `pip3`, `venv`, `pipx`, Poetry, `uv`)
+- Java (`java`, `javac`) — OpenJDK 21 by default
+- Node.js (`node`, `npm`, Corepack `yarn` / `pnpm`) — NodeSource LTS
+- Maven (`mvn`)
+- Gradle (`gradle`) — official binary distribution
+- Go (`go`) — official tarball
+- Rust (`rustc`, `cargo`) — rustup
+- Ruby (`ruby`, `gem`, `bundler`)
+- PHP (`php`, `composer`)
+- .NET SDK (`dotnet`) — Ubuntu apt, SDK 8.0 by default
+- Claude Code (`claude`) — separate installer
+- Databricks CLI (`databricks`) — separate installer
 
 The scripts are written for Ubuntu with `apt` and use official upstream package repositories where appropriate.
 
@@ -31,7 +44,8 @@ bash setup-dd/setup.sh
 The master script runs each installer in this order:
 
 ```text
-vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli
+vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli, aws-cli,
+python, java, node, maven, gradle, go, rust, ruby, php, dotnet
 ```
 
 Each installer checks whether the tool is already installed before making changes.
@@ -47,7 +61,8 @@ bash setup-dd/setup.sh --only docker,terraform,kubectl
 Available tool names:
 
 ```text
-vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli
+vscode, chrome, docker, terraform, ansible, kubectl, graphviz, azure-cli, aws-cli,
+python, java, node, maven, gradle, go, rust, ruby, php, dotnet
 ```
 
 ## Skip Tools
@@ -69,6 +84,17 @@ SKIP_ANSIBLE
 SKIP_KUBECTL
 SKIP_GRAPHVIZ
 SKIP_AZURE_CLI
+SKIP_AWS_CLI
+SKIP_PYTHON
+SKIP_JAVA
+SKIP_NODE
+SKIP_MAVEN
+SKIP_GRADLE
+SKIP_GO
+SKIP_RUST
+SKIP_RUBY
+SKIP_PHP
+SKIP_DOTNET
 ```
 
 ## Run Individual Installers
@@ -84,7 +110,22 @@ bash setup-dd/install-ansible.sh
 bash setup-dd/install-kubectl.sh
 bash setup-dd/install-graphviz.sh
 bash setup-dd/install-azure-cli.sh
+bash setup-dd/install-aws-cli.sh
+bash setup-dd/install-python.sh
+bash setup-dd/install-java.sh
+bash setup-dd/install-node.sh
+bash setup-dd/install-maven.sh
+bash setup-dd/install-gradle.sh
+bash setup-dd/install-go.sh
+bash setup-dd/install-rust.sh
+bash setup-dd/install-ruby.sh
+bash setup-dd/install-php.sh
+bash setup-dd/install-dotnet.sh
+bash setup-dd/install-databricks-cli.sh
+bash setup-dd/install-claude-code.sh
 ```
+
+Claude Code and Databricks CLI are separate installers and are not run by `setup.sh` by default.
 
 ## Docker Without sudo
 
@@ -116,6 +157,33 @@ Override the Kubernetes minor version if needed:
 KUBECTL_MINOR_VERSION=v1.35 bash setup-dd/install-kubectl.sh
 ```
 
+## Languages and Package Managers
+
+These installers are included in `setup.sh` and can also be run individually.
+
+- **Python**: installs `python3`, `pip3`, and `python3-venv` from Ubuntu apt; adds `pipx` (apt), Poetry (`pipx install poetry`), and `uv` (Astral installer into `/usr/local/bin`)
+- **Java**: installs OpenJDK via apt (`openjdk-21-jdk` by default)
+- **Node.js**: installs Node.js and npm from the official NodeSource apt repository (Node 22 LTS by default); enables Corepack and activates `yarn` / `pnpm`
+- **Maven**: installs `maven` from Ubuntu apt; installs Java first if needed
+- **Gradle**: installs the official Gradle binary distribution to `/opt/gradle` and links `gradle` into `/usr/local/bin`
+- **Go**: installs the official Go tarball under `/usr/local/go` and links `go` / `gofmt` into `/usr/local/bin` (Go modules are built-in)
+- **Rust**: installs via rustup for the current user (`rustc`, `cargo`); adds `~/.cargo/bin` to PATH
+- **Ruby**: installs `ruby-full` and `build-essential` from apt, then Bundler via `gem install bundler`
+- **PHP**: installs `php-cli` plus common extensions from apt, then Composer into `/usr/local/bin`
+- **.NET**: installs the Ubuntu apt SDK package (`dotnet-sdk-8.0` by default; NuGet is built into `dotnet`)
+
+Override defaults when needed:
+
+```sh
+JAVA_PACKAGE=openjdk-17-jdk bash setup-dd/install-java.sh
+NODE_MAJOR_VERSION=24 bash setup-dd/install-node.sh
+GRADLE_VERSION=9.7.1 bash setup-dd/install-gradle.sh
+GO_VERSION=1.27.1 bash setup-dd/install-go.sh
+DOTNET_SDK_PACKAGE=dotnet-sdk-10.0 bash setup-dd/install-dotnet.sh
+```
+
+On Ubuntu 24.04+, `dotnet-sdk-10.0` is available from the built-in Ubuntu feed. On 22.04, stick with `dotnet-sdk-8.0` unless you add the `dotnet/backports` PPA yourself.
+
 ## Verify Installation
 
 Run these commands after setup:
@@ -130,7 +198,47 @@ ansible --version
 kubectl version --client
 dot -V
 az version
+aws --version
+python3 --version
+pip3 --version
+pipx --version
+poetry --version
+uv --version
+java -version
+node --version
+npm --version
+yarn --version
+pnpm --version
+mvn --version
+gradle --version
+go version
+rustc --version
+cargo --version
+ruby --version
+bundler --version
+php --version
+composer --version
+dotnet --version
+databricks -v
+claude --version
 ```
+
+## Claude Code
+
+Install Anthropic’s Claude Code CLI with the native installer (recommended; no Node.js required):
+
+```sh
+bash setup-dd/install-claude-code.sh
+```
+
+Optional channel or version pin:
+
+```sh
+CLAUDE_CODE_CHANNEL=stable bash setup-dd/install-claude-code.sh
+CLAUDE_CODE_CHANNEL=2.1.89 bash setup-dd/install-claude-code.sh
+```
+
+The binary is installed under `~/.local/bin`. The script adds that directory to `PATH` in `~/.bashrc` or `~/.profile` when needed. Run as a regular user (not root). Claude Code requires a paid Claude plan or Anthropic Console API billing.
 
 ## Files
 
@@ -144,11 +252,31 @@ az version
 - `install-kubectl.sh`: kubectl installer
 - `install-graphviz.sh`: Graphviz / `dot` installer
 - `install-azure-cli.sh`: Azure CLI installer
+- `install-aws-cli.sh`: AWS CLI installer
+- `install-python.sh`: Python 3 / pip / venv / pipx / Poetry / uv installer
+- `install-java.sh`: OpenJDK installer
+- `install-node.sh`: Node.js / npm / Corepack yarn / pnpm installer (NodeSource)
+- `install-maven.sh`: Maven installer
+- `install-gradle.sh`: Gradle installer
+- `install-go.sh`: Go installer
+- `install-rust.sh`: Rust / Cargo installer (rustup)
+- `install-ruby.sh`: Ruby / gem / Bundler installer
+- `install-php.sh`: PHP / Composer installer
+- `install-dotnet.sh`: .NET SDK installer
 - `install-databricks-cli.sh`: Databricks CLI installer
+- `install-claude-code.sh`: Claude Code installer
 
 ## Azure CLI on newer Ubuntu releases
 
-Microsoft’s Azure CLI apt repo does not always publish a suite for the newest Ubuntu codenames (for example `resolute` on 26.04). In that case the installer falls back to a supported suite such as `noble`, and apt update automatically repairs a previously broken `azure-cli.list` so other installers (including Databricks) are not blocked.
+Microsoft’s Azure CLI apt repo does not always publish a suite for the newest Ubuntu codenames (for example `resolute` on 26.04). In that case the installer falls back to a supported suite such as `noble`, and apt update automatically repairs a previously broken `azure-cli.list` / `azure-cli.sources` so other installers (including Databricks) are not blocked.
+
+If apt is already broken on a student machine before these scripts run, repair it manually:
+
+```bash
+sudo mv -f /etc/apt/sources.list.d/azure-cli.sources /etc/apt/sources.list.d/azure-cli.sources.disabled 2>/dev/null || true
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ noble main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+sudo apt-get update
+```
 
 ## Safety Notes
 
