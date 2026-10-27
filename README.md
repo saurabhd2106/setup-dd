@@ -25,6 +25,7 @@ This folder contains modular scripts for setting up an Ubuntu desktop VM with:
 - Databricks CLI (`databricks`) — separate installer
 - GitHub Copilot CLI (`copilot`) — separate installer
 - Playwright (`playwright`) — separate installer
+- Playwright MCP (`@playwright/mcp`) — separate installer
 - Cypress (`cypress`) — separate installer
 
 The scripts are written for Ubuntu with `apt` and use official upstream package repositories where appropriate.
@@ -128,10 +129,11 @@ bash setup-dd/install-databricks-cli.sh
 bash setup-dd/install-claude-code.sh
 bash setup-dd/install-github-copilot.sh
 bash setup-dd/install-playwright.sh
+bash setup-dd/install-playwright-mcp.sh
 bash setup-dd/install-cypress.sh
 ```
 
-Claude Code, Databricks CLI, GitHub Copilot CLI, Playwright, and Cypress are separate installers and are not run by `setup.sh` by default.
+Claude Code, Databricks CLI, GitHub Copilot CLI, Playwright, Playwright MCP, and Cypress are separate installers and are not run by `setup.sh` by default.
 
 ## Docker Without sudo
 
@@ -229,6 +231,7 @@ databricks -v
 claude --version
 copilot --version
 playwright --version
+npm list -g --depth=0 @playwright/mcp
 cypress --version
 ```
 
@@ -282,6 +285,33 @@ PLAYWRIGHT_BROWSERS=chromium bash setup-dd/install-playwright.sh
 
 Browsers are cached under `~/.cache/ms-playwright`. Node.js is installed first if needed. Projects should still add `@playwright/test` as a local dependency (`npm init playwright@latest`).
 
+## Playwright MCP
+
+Install Microsoft’s Playwright MCP server (`@playwright/mcp`) globally. Node.js and Playwright browsers/deps are installed first if missing:
+
+```sh
+bash setup-dd/install-playwright-mcp.sh
+```
+
+Add the server to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}
+```
+
+With Claude Code:
+
+```sh
+claude mcp add playwright npx @playwright/mcp@latest
+```
+
 ## Cypress
 
 Install Cypress Linux prerequisites, a global `cypress` CLI, and the Cypress app binary cache:
@@ -319,6 +349,7 @@ The binary is cached under `~/.cache/Cypress`. Node.js is installed first if nee
 - `install-claude-code.sh`: Claude Code installer
 - `install-github-copilot.sh`: GitHub Copilot CLI installer
 - `install-playwright.sh`: Playwright installer
+- `install-playwright-mcp.sh`: Playwright MCP server installer
 - `install-cypress.sh`: Cypress installer
 
 ## Azure CLI on newer Ubuntu releases
