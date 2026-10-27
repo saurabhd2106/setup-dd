@@ -6,7 +6,7 @@ SETUP_DD_NAME="install-gradle"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/lib/common.sh"
 
-GRADLE_VERSION="${GRADLE_VERSION:-9.7.1}"
+GRADLE_VERSION="${GRADLE_VERSION:-9.8.2}"
 GRADLE_INSTALL_DIR="/opt/gradle"
 GRADLE_HOME="${GRADLE_INSTALL_DIR}/gradle-${GRADLE_VERSION}"
 GRADLE_ZIP_URL="https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"

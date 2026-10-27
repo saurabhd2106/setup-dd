@@ -44,11 +44,12 @@ Environment:
   SKIP_PHP=true         Skip PHP
   SKIP_DOTNET=true      Skip .NET SDK
   JAVA_PACKAGE          Apt package for Java, default openjdk-21-jdk
-  NODE_MAJOR_VERSION    Node.js major version for NodeSource, default 22
-  GRADLE_VERSION        Gradle version for official binary install, default 9.7.1
-  GO_VERSION            Go version for official tarball install, default 1.27.1
-  DOTNET_SDK_PACKAGE    Apt package for .NET SDK, default dotnet-sdk-8.0
-  KUBECTL_MINOR_VERSION Override kubectl repo version, e.g. v1.36
+  NODE_MAJOR_VERSION    Node.js major version for NodeSource, default 24
+  GRADLE_VERSION        Gradle version for official binary install, default 9.8.2
+  GO_VERSION            Go version for official tarball install, default 1.27.3
+  DOTNET_SDK_PACKAGE    Apt package for .NET SDK; default prefers newest available
+                        (dotnet-sdk-10.0 when present, else 9.0 / 8.0)
+  KUBECTL_MINOR_VERSION Override kubectl repo version, e.g. v1.37
   SETUP_DD_USER         User to add to docker group, defaults to current user
 EOF
 }

@@ -6,7 +6,7 @@ SETUP_DD_NAME="install-kubectl"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/lib/common.sh"
 
-KUBECTL_MINOR_VERSION="${KUBECTL_MINOR_VERSION:-v1.36}"
+KUBECTL_MINOR_VERSION="${KUBECTL_MINOR_VERSION:-v1.37}"
 KUBERNETES_REPO_URL="https://pkgs.k8s.io/core:/stable:/${KUBECTL_MINOR_VERSION}/deb/"
 
 ensure_apt

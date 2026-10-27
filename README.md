@@ -20,9 +20,12 @@ This folder contains modular scripts for setting up an Ubuntu desktop VM with:
 - Rust (`rustc`, `cargo`) — rustup
 - Ruby (`ruby`, `gem`, `bundler`)
 - PHP (`php`, `composer`)
-- .NET SDK (`dotnet`) — Ubuntu apt, SDK 8.0 by default
+- .NET SDK (`dotnet`) — Ubuntu apt; prefers newest available SDK (10.0 when present)
 - Claude Code (`claude`) — separate installer
 - Databricks CLI (`databricks`) — separate installer
+- GitHub Copilot CLI (`copilot`) — separate installer
+- Playwright (`playwright`) — separate installer
+- Cypress (`cypress`) — separate installer
 
 The scripts are written for Ubuntu with `apt` and use official upstream package repositories where appropriate.
 
@@ -123,9 +126,12 @@ bash setup-dd/install-php.sh
 bash setup-dd/install-dotnet.sh
 bash setup-dd/install-databricks-cli.sh
 bash setup-dd/install-claude-code.sh
+bash setup-dd/install-github-copilot.sh
+bash setup-dd/install-playwright.sh
+bash setup-dd/install-cypress.sh
 ```
 
-Claude Code and Databricks CLI are separate installers and are not run by `setup.sh` by default.
+Claude Code, Databricks CLI, GitHub Copilot CLI, Playwright, and Cypress are separate installers and are not run by `setup.sh` by default.
 
 ## Docker Without sudo
 
@@ -149,12 +155,12 @@ docker run hello-world
 
 ## kubectl Version
 
-The kubectl installer uses the Kubernetes `pkgs.k8s.io` stable apt repository. By default it uses `v1.36`.
+The kubectl installer uses the Kubernetes `pkgs.k8s.io` stable apt repository. By default it uses `v1.37`.
 
 Override the Kubernetes minor version if needed:
 
 ```sh
-KUBECTL_MINOR_VERSION=v1.35 bash setup-dd/install-kubectl.sh
+KUBECTL_MINOR_VERSION=v1.36 bash setup-dd/install-kubectl.sh
 ```
 
 ## Languages and Package Managers
@@ -162,27 +168,27 @@ KUBECTL_MINOR_VERSION=v1.35 bash setup-dd/install-kubectl.sh
 These installers are included in `setup.sh` and can also be run individually.
 
 - **Python**: installs `python3`, `pip3`, and `python3-venv` from Ubuntu apt; adds `pipx` (apt), Poetry (`pipx install poetry`), and `uv` (Astral installer into `/usr/local/bin`)
-- **Java**: installs OpenJDK via apt (`openjdk-21-jdk` by default)
-- **Node.js**: installs Node.js and npm from the official NodeSource apt repository (Node 22 LTS by default); enables Corepack and activates `yarn` / `pnpm`
+- **Java**: installs OpenJDK via apt (`openjdk-21-jdk` by default; LTS available on Ubuntu 22.04 and 24.04)
+- **Node.js**: installs Node.js and npm from the official NodeSource apt repository (Node 24 Active LTS by default); enables Corepack and activates `yarn` / `pnpm`
 - **Maven**: installs `maven` from Ubuntu apt; installs Java first if needed
-- **Gradle**: installs the official Gradle binary distribution to `/opt/gradle` and links `gradle` into `/usr/local/bin`
-- **Go**: installs the official Go tarball under `/usr/local/go` and links `go` / `gofmt` into `/usr/local/bin` (Go modules are built-in)
+- **Gradle**: installs the official Gradle binary distribution to `/opt/gradle` and links `gradle` into `/usr/local/bin` (9.8.2 by default)
+- **Go**: installs the official Go tarball under `/usr/local/go` and links `go` / `gofmt` into `/usr/local/bin` (Go 1.27.3 by default; modules are built-in)
 - **Rust**: installs via rustup for the current user (`rustc`, `cargo`); adds `~/.cargo/bin` to PATH
 - **Ruby**: installs `ruby-full` and `build-essential` from apt, then Bundler via `gem install bundler`
 - **PHP**: installs `php-cli` plus common extensions from apt, then Composer into `/usr/local/bin`
-- **.NET**: installs the Ubuntu apt SDK package (`dotnet-sdk-8.0` by default; NuGet is built into `dotnet`)
+- **.NET**: installs the newest Ubuntu apt SDK package available (`dotnet-sdk-10.0` when present, else 9.0 / 8.0; NuGet is built into `dotnet`)
 
 Override defaults when needed:
 
 ```sh
 JAVA_PACKAGE=openjdk-17-jdk bash setup-dd/install-java.sh
-NODE_MAJOR_VERSION=24 bash setup-dd/install-node.sh
-GRADLE_VERSION=9.7.1 bash setup-dd/install-gradle.sh
-GO_VERSION=1.27.1 bash setup-dd/install-go.sh
-DOTNET_SDK_PACKAGE=dotnet-sdk-10.0 bash setup-dd/install-dotnet.sh
+NODE_MAJOR_VERSION=22 bash setup-dd/install-node.sh
+GRADLE_VERSION=9.8.2 bash setup-dd/install-gradle.sh
+GO_VERSION=1.27.3 bash setup-dd/install-go.sh
+DOTNET_SDK_PACKAGE=dotnet-sdk-8.0 bash setup-dd/install-dotnet.sh
 ```
 
-On Ubuntu 24.04+, `dotnet-sdk-10.0` is available from the built-in Ubuntu feed. On 22.04, stick with `dotnet-sdk-8.0` unless you add the `dotnet/backports` PPA yourself.
+On Ubuntu 24.04+, `dotnet-sdk-10.0` is usually available from the built-in Ubuntu feed and is preferred automatically. On 22.04 the installer falls back to `dotnet-sdk-8.0` unless you set `DOTNET_SDK_PACKAGE` or add the `dotnet/backports` PPA yourself.
 
 ## Verify Installation
 
@@ -221,6 +227,9 @@ composer --version
 dotnet --version
 databricks -v
 claude --version
+copilot --version
+playwright --version
+cypress --version
 ```
 
 ## Claude Code
@@ -239,6 +248,49 @@ CLAUDE_CODE_CHANNEL=2.1.89 bash setup-dd/install-claude-code.sh
 ```
 
 The binary is installed under `~/.local/bin`. The script adds that directory to `PATH` in `~/.bashrc` or `~/.profile` when needed. Run as a regular user (not root). Claude Code requires a paid Claude plan or Anthropic Console API billing.
+
+## GitHub Copilot CLI
+
+Install the GitHub Copilot CLI with the official install script:
+
+```sh
+bash setup-dd/install-github-copilot.sh
+```
+
+Optional version pin:
+
+```sh
+COPILOT_VERSION=v0.0.369 bash setup-dd/install-github-copilot.sh
+COPILOT_VERSION=prerelease bash setup-dd/install-github-copilot.sh
+```
+
+The binary is installed under `~/.local/bin`. The script adds that directory to `PATH` when needed. Run as a regular user (not root). Copilot CLI requires an active GitHub Copilot subscription.
+
+## Playwright
+
+Install the Playwright Test CLI globally, Ubuntu browser dependencies, and browser binaries:
+
+```sh
+bash setup-dd/install-playwright.sh
+```
+
+Optional browser filter (default installs Chromium, Firefox, and WebKit):
+
+```sh
+PLAYWRIGHT_BROWSERS=chromium bash setup-dd/install-playwright.sh
+```
+
+Browsers are cached under `~/.cache/ms-playwright`. Node.js is installed first if needed. Projects should still add `@playwright/test` as a local dependency (`npm init playwright@latest`).
+
+## Cypress
+
+Install Cypress Linux prerequisites, a global `cypress` CLI, and the Cypress app binary cache:
+
+```sh
+bash setup-dd/install-cypress.sh
+```
+
+The binary is cached under `~/.cache/Cypress`. Node.js is installed first if needed. Projects should still add `cypress` as a local devDependency (`npm install cypress --save-dev`).
 
 ## Files
 
@@ -265,6 +317,9 @@ The binary is installed under `~/.local/bin`. The script adds that directory to 
 - `install-dotnet.sh`: .NET SDK installer
 - `install-databricks-cli.sh`: Databricks CLI installer
 - `install-claude-code.sh`: Claude Code installer
+- `install-github-copilot.sh`: GitHub Copilot CLI installer
+- `install-playwright.sh`: Playwright installer
+- `install-cypress.sh`: Cypress installer
 
 ## Azure CLI on newer Ubuntu releases
 

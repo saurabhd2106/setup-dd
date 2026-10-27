@@ -6,7 +6,7 @@ SETUP_DD_NAME="install-go"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/lib/common.sh"
 
-GO_VERSION="${GO_VERSION:-1.27.1}"
+GO_VERSION="${GO_VERSION:-1.27.3}"
 GO_INSTALL_DIR="/usr/local/go"
 
 go_arch() {

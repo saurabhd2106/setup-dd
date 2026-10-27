@@ -6,7 +6,7 @@ SETUP_DD_NAME="install-node"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/lib/common.sh"
 
-NODE_MAJOR_VERSION="${NODE_MAJOR_VERSION:-22}"
+NODE_MAJOR_VERSION="${NODE_MAJOR_VERSION:-24}"
 NODE_APT_REPO="https://deb.nodesource.com/node_${NODE_MAJOR_VERSION}.x"
 NODE_KEYRING_PATH="/usr/share/keyrings/nodesource.gpg"
 NODE_SOURCE_PATH="/etc/apt/sources.list.d/nodesource.list"
